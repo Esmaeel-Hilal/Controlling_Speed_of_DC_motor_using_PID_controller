@@ -1,6 +1,7 @@
 /*
- * This code is for controlling a DC motor with 95 rpm speed using Arduino Mega and PID controller
+ * This code is for controlling the speed of a DC motor with 95 rpm speed 
  * and an incoder with 612 pulse for a full rotation
+ * using Arduino Mega and PID controller
  * 
  * Note:
  * I found that the maximum speed of the motor is 75 rpm although it is supposed to be 95 rpm!!!
@@ -28,7 +29,7 @@ volatile double curError_0, preError_0, errorSum_0;
 volatile int16_t PIDOUT, motorPower = 127;
 
 //variables to calculate the motor speed and angle of rotation
-volatile double targetSpeed = 50; //set the target speed
+const double targetSpeed = 50; //set the target speed
 volatile bool bState; //to check the direction of the motor rotation
 volatile double angleDeg;
 const double stepPerPul = 0.0103; // 2 * PI / number of pulses per revolution = 2 * PI / 612 = 0.01026664265
@@ -154,47 +155,47 @@ void POSITION_CONTROL()
 
 ISR(TIMER1_COMPA_vect)
 {
-//  Calculate the speed of the motor  
-    curSpeed = (double)pulsesCnt * (1 / sampleTime); //number of pulses per second
-    curSpeed = curSpeed / pulsesPerRot; // rps = (counted pulses until now / total number of pulses per revolution)
-    curSpeed = curSpeed * 60;
-    pulsesCnt = 0;
+//Calculate the speed of the motor  
+  curSpeed = (double)pulsesCnt * (1 / sampleTime); //number of pulses per second
+  curSpeed = curSpeed / pulsesPerRot; // rps = (counted pulses until now / total number of pulses per revolution)
+  curSpeed = curSpeed * 60;
+  pulsesCnt = 0;
 
-//  Calculate the error in speed  
-    curError_0 = targetSpeed - curSpeed;
+//Calculate the error in speed  
+  curError_0 = targetSpeed - curSpeed;
 
-//  Calculate the error sum
-    errorSum_0 = errorSum_0 + curError_0;  
+//Calculate the error sum
+  errorSum_0 = errorSum_0 + curError_0;  
 
-//  Calculate KP_part, KI_part, KD_part
-    kpPart_0 = Kp_0*curError_0;
-    kiPart_0 = Ki_0*errorSum_0*sampleTime;
-    kdPart_0 = (Kd_0*(curError_0 - preError_0)) / sampleTime;
+//Calculate KP_part, KI_part, KD_part
+  kpPart_0 = Kp_0*curError_0;
+  kiPart_0 = Ki_0*errorSum_0*sampleTime;
+  kdPart_0 = (Kd_0*(curError_0 - preError_0)) / sampleTime;
 
-//  Calculate the PID output 
-    motorPower = kpPart_0 + kiPart_0 + kdPart_0;
+//Calculate the PID output 
+  motorPower = kpPart_0 + kiPart_0 + kdPart_0;
 
-//  Save the previous value of the error
-    preError_0 = curError_0;
+//Save the previous value of the error
+  preError_0 = curError_0;
 
-    PIDOUT = (int16_t) motorPower;
+  PIDOUT = (int16_t) motorPower;
 
-//  Determine the max limits and min limits of the PID controller output
-    if(PIDOUT > 255)
-      PIDOUT = 255;
-    else if(PIDOUT < 0)
-      PIDOUT = 0;
+//Determine the max limits and min limits of the PID controller output
+  if(PIDOUT > 255)
+    PIDOUT = 255;
+  else if(PIDOUT < 0)
+    PIDOUT = 0;
 
-//  
-    if(motorDir)
-    {
-      digitalWrite(INR0, HIGH);
-      digitalWrite(INR1, LOW);
-    }
-    else
-    {
-      digitalWrite(INR0, LOW);
-      digitalWrite(INR1, HIGH);
-    }
-    analogWrite(PWM,PIDOUT);
+//Set the motor direction
+  if(motorDir)
+  {
+    digitalWrite(INR0, HIGH);
+    digitalWrite(INR1, LOW);
+  }
+  else
+  {
+    digitalWrite(INR0, LOW);
+    digitalWrite(INR1, HIGH);
+  }
+  analogWrite(PWM,PIDOUT);
 }
